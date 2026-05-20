@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一至四年級體育課計分系統</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        h1, h2, h3 { color: #333; }
+        .container { display: flex; gap: 20px; }
+        .sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 300px; flex-shrink: 0; }
+        .main-content { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-grow: 1; overflow-x: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background-color: #45a049; }
+        .calc-btn { background-color: #008CBA; }
+        .calc-btn:hover { background-color: #007bb5; }
+        input[type="number"] { width: 60px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h1>🏃‍♂️ 一至四年級體育課計分系統</h1>
+
+    <div class="container">
+        <div class="sidebar">
+            <h3>📝 步驟 1：考試設定</h3>
+            <div class="form-group">
+                <label>選擇本學期體適能項目 (佔 40%)</label>
+                <select id="fitnessType">
+                    <option value="run">耐力跑 (圈數)</option>
+                    <option value="situp">仰卧起坐 (次)</option>
+                    <option value="reach">坐地前身 (cm)</option>
+                    <option value="grip">手握力 (kg)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>匯入班名單 (Excel)</label>
+                <input type="file" id="fileUpload" accept=".xlsx, .xls">
+                <small>※ Excel 必須包含「姓名」欄位</small>
+            </div>
+
+            <hr>
+            <h3>📝 步驟 2：輸入考核題目</h3>
+            <div class="form-group">
+                <label>技能考核題目 1</label>
+                <input type="text" id="skill1" value="籃球運球">
+            </div>
+            <div class="form-group">
+                <label>技能考核題目 2</label>
+                <input type="text" id="skill2" value="籃球投籃">
+            </div>
+            <div class="form-group">
+                <label>知識考核題目</label>
+                <input type="text" id="knowledge" value="運動安全知識">
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h3>👨‍🎓 學生評分表</h3>
+            <p>請先上傳名單，然後在下方表格直接輸入數據或選擇分數（拉單）。</p>
+            <div id="tableContainer"></div>
+            
+            <button class="calc-btn" id="calcBtn" style="display:none;" onclick="calculateScores()">🧮 計算總成績</button>
+            <button id="exportBtn" style="display:none;" onclick="exportExcel()">📥 下載最終成績單 (Excel)</button>
+        </div>
+    </div>
+
+    <script>
+        let studentData = [];
+
+        // 產生下拉選單 (拉單) 的 HTML 字串
+        function generateSelect(maxScore, defaultValue) {
+            let options = '';
+            for (let i = 0; i <= maxScore; i++) {
+                let selected = (i === defaultValue) ? 'selected' : '';
+                options += `<option value="${i}" ${selected}>${i}</option>`;
+            }
+            return `<select>${options}</select>`;
+        }
+
+        // 處理檔案上傳
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let data = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(data, {type: 'array'});
+                let firstSheetName = workbook.SheetNames[0];
+                let worksheet = workbook.Sheets[firstSheetName];
+                
+                // 將 Excel 轉為 JSON 陣列
+                studentData = XLSX.utils.sheet_to_json(worksheet);
+                
+                // 檢查是否有「姓名」欄位
+                if (studentData.length > 0 && !studentData[0].hasOwnProperty('姓名')) {
+                    alert('Excel 檔案中找不到「姓名」欄位，請檢查檔案格式！');
+                    return;
+                }
+                renderTable();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 渲染表格
+        function renderTable() {
+            if (studentData.length === 0) return;
+
+            let fitnessTypeLabel = document.getElementById('fitnessType').options[document.getElementById('fitnessType').selectedIndex].text;
+            let skill1Label = document.getElementById('skill1').value;
+            let skill2Label = document.getElementById('skill2').value;
+            let knowledgeLabel = document.getElementById('knowledge').value;
+
+            let html = '<table id="scoreTable"><thead><tr>';
+            html += '<th>姓名</th>';
+            html += `<th>${fitnessTypeLabel}<br>(數據)</th>`;
+            html += `<th>技能一<br>(${skill1Label})<br>0-20分</th>`;
+            html += `<th>技能二<br>(${skill2Label})<br>0-20分</th>`;
+            html += `<th>知識<br>(${knowledgeLabel})<br>0-10分</th>`;
+            html += '<th>態度:服裝整齊<br>0-5分</th>';
+            html += '<th>態度:積極參與<br>0-5分</th>';
+            html += '<th>總成績<br>(自動計算)</th>';
+            html += '</tr></thead><tbody>';
+
+            studentData.forEach((student, index) => {
+                let name = student['姓名'] || `學生${index+1}`;
+                html += `<tr>`;
+                html += `<td>${name}</td>`;
+                html += `<td><input type="number" step="0.1" class="fitness-input" value="0"></td>`;
+                html += `<td>${generateSelect(20, 0)}</td>`; // 技能一
+                html += `<td>${generateSelect(20, 0)}</td>`; // 技能二
+                html += `<td>${generateSelect(10, 0)}</td>`; // 知識
+                html += `<td>${generateSelect(5, 5)}</td>`;  // 服裝 (預設5分)
+                html += `<td>${generateSelect(5, 5)}</td>`;  // 參與 (預設5分)
+                html += `<td class="total-score">-</td>`;
+                html += `</tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('tableContainer').innerHTML = html;
+            
+            // 顯示計算和下載按鈕
+            document.getElementById('calcBtn').style.display = 'inline-block';
+            document.getElementById('exportBtn').style.display = 'inline-block';
+        }
+
+        // 計算體適能分數邏輯
+        function getFitnessScore(type, val) {
+            val = parseFloat(val) || 0;
+            if (type === 'run') {
+                let dist = val * 60;
+                if (dist < 640) return 0;
+                if (dist <= 709) return 8;
+                if (dist <= 769) return 16;
+                if (dist <= 839) return 24;
+                if (dist <= 889) return 32;
+                return 40;
+            } else if (type === 'situp') {
+                if (val <= 4) return 8;
+                if (val <= 8) return 16;
+                if (val <= 13) return 24;
+                if (val <= 21) return 32; // 補齊 19-21
+                return 40;
+            } else if (type === 'reach') {
+                if (val <= 12) return 0;
+                if (val <= 17) return 8;
+                if (val <= 22) return 16;
+                if (val <= 27) return 24;
+                if (val <= 32) return 32; // 補齊 32
+                return 40;
+            } else if (type === 'grip') {
+                if (val <= 12.4) return 0;
+                if (val <= 13.9) return 8;
+                if (val <= 16.4) return 16;
+                if (val <= 19.4) return 24;
+                if (val <= 21.4) return 32;
+                return 40;
+            }
+            return 0;
+        }
+
+        // 執行計算
+        function calculateScores() {
+            let table = document.getElementById('scoreTable');
+            if (!table) return;
+
+            let fitnessType = document.getElementById('fitnessType').value;
+            let rows = table.getElementsByTagName('tbody')[0].rows;
+
+            for (let i = 0; i < rows.length; i++) {
+                let cells = rows[i].cells;
+                
+                // 抓取輸入值
+                let fitnessData = cells[1].querySelector('input').value;
+                let skill1 = parseInt(cells[2].querySelector('select').value);
+                let skill2 = parseInt(cells[3].querySelector('select').value);
+                let knowledge = parseInt(cells[4].querySelector('select').value);
+                let attire = parseInt(cells[5].querySelector('select').value);
+                let participation = parseInt(cells[6].querySelector('select').value);
+
+                // 計算各項分數
+                let fitnessScore = getFitnessScore(fitnessType, fitnessData);
+                let total = fitnessScore + skill1 + skill2 + knowledge + attire + participation;
+
+                // 更新總成績欄位，並加上明細方便核對
+                cells[7].innerHTML = `<b>${total}</b> <br><small style="color:gray">(體適能得 ${fitnessScore} 分)</small>`;
+            }
+            alert("計算完成！請檢查最右側的總成績。");
+        }
+
+        // 匯出為 Excel
+        function exportExcel() {
+            let table = document.getElementById('scoreTable');
+            if (!table) {
+                alert("沒有資料可以匯出！");
+                return;
+            }
+
+            // 複製表格並清理內部元素 (將 input/select 轉換為純文字) 以便乾淨匯出
+            let cloneTable = table.cloneNode(true);
+            let rows = cloneTable.rows;
+            for (let i = 1; i < rows.length; i++) {
+                let cells = rows[i].cells;
+                
+                // 體適能
+                cells[1].innerText = cells[1].querySelector('input').value;
+                // 拉單 (Skills, Knowledge, Attitude)
+                for(let j = 2; j <= 6; j++) {
+                    cells[j].innerText = cells[j].querySelector('select').value;
+                }
+                // 總分 (去除 HTML 標籤)
+                cells[7].innerText = cells[7].innerText.split('\n')[0].replace(" (體適能得 ", " (").replace(" 分)", "");
+            }
+
+            let wb = XLSX.utils.table_to_book(cloneTable, {sheet: "體育成績單"});
+            XLSX.writeFile(wb, "體育成績單.xlsx");
+        }
+    </script>
+</body>
+</html>
