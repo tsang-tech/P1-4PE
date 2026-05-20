@@ -6,46 +6,51 @@
     <title>一至四年級體育課計分系統</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f9f9f9; padding: 20px; box-sizing: border-box; }
-        h1 { color: #333; text-align: center; margin-bottom: 30px; }
-        h3 { color: #333; margin-top: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f0f4f8; padding: 15px; box-sizing: border-box; }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 25px; font-size: 24px;}
+        h3 { color: #34495e; margin-top: 0; font-size: 18px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;}
         
-        /* 將所有內容垂直堆疊 */
-        .content-wrapper { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-        
-        /* 卡片樣式 */
-        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; }
+        .content-wrapper { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; }
         
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #4a5568; font-size: 14px;}
+        .form-group input[type="text"], .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         
-        /* 表格區塊優化 */
-        .table-card { overflow-x: auto; /* 確保在手機上表格可以橫向滾動 */ }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; min-width: 600px; /* 確保表格在窄屏上不過度擠壓 */ }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background-color: #f2f2f2; position: sticky; top: 0; } /* 固定表頭 */
+        /* 檔案上傳按鈕美化 */
+        input[type="file"] { display: block; width: 100%; padding: 8px; font-size: 14px; border: 1px dashed #a0aec0; border-radius: 6px; background-color: #f7fafc; cursor: pointer; }
         
-        input[type="number"] { width: 60px; text-align: center; font-size: 14px; }
-        td select { width: 60px; font-size: 14px; } /* 表格內下拉選單寬度調整 */
+        /* 表格區塊 */
+        .table-card { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; min-width: 900px; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 4px; text-align: center; vertical-align: middle; }
+        th { background-color: #edf2f7; position: sticky; top: 0; color: #2d3748; z-index: 10; }
+        
+        input[type="number"] { width: 60px; text-align: center; font-size: 14px; padding: 6px; border: 1px solid #cbd5e0; border-radius: 4px; }
+        td select { width: 65px; font-size: 14px; padding: 6px; border: 1px solid #cbd5e0; border-radius: 4px; }
+        
+        .grade-cell { font-weight: bold; font-size: 18px; color: #e53e3e; }
 
         /* 按鈕區 */
         .action-buttons { text-align: center; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
         @media (min-width: 600px) {
-            .action-buttons { flex-direction: row; justify-content: center; gap: 20px; }
+            .action-buttons { flex-direction: row; justify-content: center; gap: 15px; }
+            .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         }
 
-        button { color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; max-width: 250px; box-sizing: border-box; transition: background-color 0.2s; }
+        button { color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%; max-width: 250px; box-sizing: border-box; transition: background-color 0.2s; }
         
-        button#calcBtn { background-color: #008CBA; }
-        button#calcBtn:hover { background-color: #007bb5; }
-        
-        button#exportBtn { background-color: #4CAF50; }
-        button#exportBtn:hover { background-color: #45a049; }
-        
-        /* 小提示樣式 */
-        .alert { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; text-align: center; }
+        button.primary-btn { background-color: #3182ce; }
+        button.primary-btn:hover { background-color: #2b6cb0; }
+        button.success-btn { background-color: #38a169; }
+        button.success-btn:hover { background-color: #2f855a; }
+        button.warning-btn { background-color: #d69e2e; color: #fff;}
+        button.warning-btn:hover { background-color: #b7791f; }
+        button.danger-btn { background-color: #e53e3e; }
+        button.danger-btn:hover { background-color: #c53030; }
 
+        .alert { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: bold;}
+        .small-text { font-size: 12px; color: #718096; margin-top: 4px; display: block; }
     </style>
 </head>
 <body>
@@ -54,130 +59,288 @@
 
     <div class="content-wrapper">
         <div class="card settings-card">
-            <h3>📝 步驟 1：考試設定</h3>
-            <div class="form-group">
-                <label>選擇本學期體適能項目 (佔 40%)</label>
-                <select id="fitnessType">
-                    <option value="run">耐力跑 (圈數)</option>
-                    <option value="situp">仰卧起坐 (次)</option>
-                    <option value="reach">坐地前身 (cm)</option>
-                    <option value="grip">手握力 (kg)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>匯入班名單 (Excel)</label>
-                <input type="file" id="fileUpload" accept=".xlsx, .xls">
-                <small>※ Excel 必須包含「姓名」欄位</small>
+            <div class="tools-grid">
+                <div>
+                    <h3>📝 步驟 1：建立新名單或考試設定</h3>
+                    <div class="form-group">
+                        <label>選擇本學期體適能項目 (佔 40%)</label>
+                        <select id="fitnessType" onchange="autoSave()">
+                            <option value="run">耐力跑 (圈數)</option>
+                            <option value="situp">仰卧起坐 (次)</option>
+                            <option value="reach">坐地前身 (cm)</option>
+                            <option value="grip">手握力 (kg)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>匯入全新班名單 (Excel)</label>
+                        <input type="file" id="fileUpload" accept=".xlsx, .xls">
+                        <span class="small-text">※ 建議 Excel 包含「班別」、「學號」、「姓名」欄位</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>💾 步驟 1.5：進度備份與還原 (可選)</h3>
+                    <div class="form-group">
+                        <label>匯入先前的打分進度 (JSON 備份檔)</label>
+                        <input type="file" id="importBackup" accept=".json">
+                        <span class="small-text">※ 用來接續之前未完成的評分工作</span>
+                    </div>
+                    <div class="form-group" style="margin-top: 18px;">
+                        <button class="warning-btn" onclick="exportBackup()" style="width:100%; max-width: 100%;">📥 下載當前進度備份 (JSON)</button>
+                        <button class="danger-btn" onclick="clearData()" style="width:100%; max-width: 100%; margin-top: 10px;">🗑️ 清除所有暫存資料</button>
+                    </div>
+                </div>
             </div>
 
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
             
             <h3>📝 步驟 2：輸入考核題目</h3>
-            <div class="form-group">
-                <label>技能考核題目 1</label>
-                <input type="text" id="skill1" value="籃球運球">
-            </div>
-            <div class="form-group">
-                <label>技能考核題目 2</label>
-                <input type="text" id="skill2" value="籃球投籃">
-            </div>
-            <div class="form-group">
-                <label>知識考核題目</label>
-                <input type="text" id="knowledge" value="運動安全知識">
+            <div class="tools-grid">
+                <div class="form-group">
+                    <label>技能考核題目 1</label>
+                    <input type="text" id="skill1" value="籃球運球" oninput="autoSave(); updateHeaders();">
+                </div>
+                <div class="form-group">
+                    <label>技能考核題目 2</label>
+                    <input type="text" id="skill2" value="籃球投籃" oninput="autoSave(); updateHeaders();">
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>知識考核題目</label>
+                    <input type="text" id="knowledge" value="運動安全知識" oninput="autoSave(); updateHeaders();">
+                </div>
             </div>
         </div>
 
         <div class="card table-card" id="tableCard">
-            <h3>👨‍🎓 學生評分表</h3>
-            <div class="alert" id="tableAlert">請先上傳名單，然後在下方表格直接輸入數據或選擇分數。</div>
+            <h3>👨‍🎓 學生評分表 <span id="saveStatus" style="font-size: 12px; color: #38a169; float: right; margin-top: 4px;">✅ 已自動儲存</span></h3>
+            <div class="alert" id="tableAlert">請先上傳 Excel 班名單，或匯入 JSON 進度備份檔。</div>
+            
             <div id="tableContainer"></div>
             
             <div class="action-buttons">
-                <button id="calcBtn" style="display:none;" onclick="calculateScores()">🧮 計算總成績</button>
-                <button id="exportBtn" style="display:none;" onclick="exportExcel()">📥 下載成績單 (Excel)</button>
+                <button id="calcBtn" class="primary-btn" style="display:none;" onclick="calculateScores()">🧮 結算總成績與評級</button>
+                <button id="exportBtn" class="success-btn" style="display:none;" onclick="exportExcel()">📊 匯出最終成績單 (Excel)</button>
             </div>
         </div>
     </div>
 
-    <script>
-        let studentData = [];
+    <a id="downloadAnchorElem" style="display:none"></a>
 
-        // 產生下拉選單 (拉單) 的 HTML 字串
+    <script>
+        let appState = {
+            settings: {
+                fitnessType: 'run',
+                skill1: '籃球運球',
+                skill2: '籃球投籃',
+                knowledge: '運動安全知識'
+            },
+            students: []
+        };
+
+        // 頁面載入時檢查是否有暫存資料
+        window.onload = function() {
+            let savedState = localStorage.getItem('peGradingState_v2');
+            if (savedState) {
+                try {
+                    appState = JSON.parse(savedState);
+                    restoreUIFromState();
+                    if (appState.students.length > 0) {
+                        renderTable();
+                        calculateScores(false); // 靜默計算一次
+                    }
+                } catch (e) {
+                    console.error("載入暫存失敗", e);
+                }
+            }
+        };
+
+        // 同步狀態到 LocalStorage
+        function saveStateToLocal() {
+            localStorage.setItem('peGradingState_v2', JSON.stringify(appState));
+            let status = document.getElementById('saveStatus');
+            status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
+            status.style.color = "#38a169";
+        }
+
+        // 當輸入框或選單改變時，觸發自動儲存
+        function autoSave() {
+            // 更新設定值
+            appState.settings.fitnessType = document.getElementById('fitnessType').value;
+            appState.settings.skill1 = document.getElementById('skill1').value;
+            appState.settings.skill2 = document.getElementById('skill2').value;
+            appState.settings.knowledge = document.getElementById('knowledge').value;
+
+            // 更新學生分數資料
+            if (appState.students.length > 0) {
+                let table = document.getElementById('scoreTable');
+                if (table) {
+                    let rows = table.getElementsByTagName('tbody')[0].rows;
+                    for (let i = 0; i < rows.length; i++) {
+                        let cells = rows[i].cells;
+                        appState.students[i].fitnessVal = parseFloat(cells[3].querySelector('input').value) || 0;
+                        appState.students[i].skill1Val = parseInt(cells[4].querySelector('select').value) || 0;
+                        appState.students[i].skill2Val = parseInt(cells[5].querySelector('select').value) || 0;
+                        appState.students[i].knowledgeVal = parseInt(cells[6].querySelector('select').value) || 0;
+                        appState.students[i].attireVal = parseInt(cells[7].querySelector('select').value) || 0;
+                        appState.students[i].participationVal = parseInt(cells[8].querySelector('select').value) || 0;
+                    }
+                }
+            }
+            saveStateToLocal();
+        }
+
+        // 即時更新表頭名稱 (當修改考核題目時)
+        function updateHeaders() {
+            if(document.getElementById('th-skill1')) document.getElementById('th-skill1').innerHTML = `技能一<br>${document.getElementById('skill1').value}<br><small>0-20分</small>`;
+            if(document.getElementById('th-skill2')) document.getElementById('th-skill2').innerHTML = `技能二<br>${document.getElementById('skill2').value}<br><small>0-20分</small>`;
+            if(document.getElementById('th-knowledge')) document.getElementById('th-knowledge').innerHTML = `知識<br>${document.getElementById('knowledge').value}<br><small>0-10分</small>`;
+        }
+
+        // 從 State 還原介面
+        function restoreUIFromState() {
+            document.getElementById('fitnessType').value = appState.settings.fitnessType;
+            document.getElementById('skill1').value = appState.settings.skill1;
+            document.getElementById('skill2').value = appState.settings.skill2;
+            document.getElementById('knowledge').value = appState.settings.knowledge;
+        }
+
+        // 產生下拉選單 HTML
         function generateSelect(maxScore, defaultValue) {
             let options = '';
             for (let i = 0; i <= maxScore; i++) {
                 let selected = (i === defaultValue) ? 'selected' : '';
                 options += `<option value="${i}" ${selected}>${i}</option>`;
             }
-            return `<select>${options}</select>`;
+            return `<select onchange="autoSave()">${options}</select>`;
         }
 
-        // 處理檔案上傳
+        // 讀取全新 Excel
         document.getElementById('fileUpload').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if (!file) return;
+
+            if (!confirm("匯入新名單將會覆蓋當前所有打分資料。是否繼續？")) {
+                e.target.value = "";
+                return;
+            }
 
             let reader = new FileReader();
             reader.onload = function(e) {
                 let data = new Uint8Array(e.target.result);
                 let workbook = XLSX.read(data, {type: 'array'});
-                let firstSheetName = workbook.SheetNames[0];
-                let worksheet = workbook.Sheets[firstSheetName];
+                let worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                let rawData = XLSX.utils.sheet_to_json(worksheet);
                 
-                // 將 Excel 轉為 JSON 陣列
-                studentData = XLSX.utils.sheet_to_json(worksheet);
-                
-                // 檢查是否有「姓名」欄位
-                if (studentData.length > 0 && !studentData[0].hasOwnProperty('姓名')) {
+                if (rawData.length > 0 && !rawData[0].hasOwnProperty('姓名')) {
                     alert('Excel 檔案中找不到「姓名」欄位，請檢查檔案格式！');
                     return;
                 }
+
+                // 初始化 State
+                appState.students = rawData.map(row => ({
+                    class: row['班別'] || row['班級'] || '-',
+                    studentNo: row['學號'] || '-',
+                    name: row['姓名'] || '未知',
+                    fitnessVal: 0,
+                    skill1Val: 0, skill2Val: 0, knowledgeVal: 0,
+                    attireVal: 5, participationVal: 5, 
+                    totalScore: 0, grade: '-'
+                }));
+                
+                autoSave();
                 renderTable();
             };
             reader.readAsArrayBuffer(file);
         });
 
+        // 讀取 JSON 進度備份
+        document.getElementById('importBackup').addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let importedData = JSON.parse(e.target.result);
+                    if(importedData && importedData.settings && importedData.students) {
+                        appState = importedData;
+                        restoreUIFromState();
+                        renderTable();
+                        calculateScores(false); // 重新結算並顯示
+                        saveStateToLocal();
+                        alert("✅ 進度讀取成功！");
+                    } else {
+                        alert("檔案格式不正確！");
+                    }
+                } catch(err) {
+                    alert("讀取檔案失敗！請確認是否為正確的 JSON 備份檔。");
+                }
+                document.getElementById('importBackup').value = ""; // reset
+            };
+            reader.readAsText(file);
+        });
+
+        // 匯出 JSON 備份
+        function exportBackup() {
+            if (appState.students.length === 0) {
+                alert("目前沒有資料可以備份！");
+                return;
+            }
+            autoSave(); // 確保最新狀態
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
+            let dlAnchorElem = document.getElementById('downloadAnchorElem');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `體育計分進度備份_${new Date().toISOString().split('T')[0]}.json`);
+            dlAnchorElem.click();
+        }
+
+        // 清除暫存
+        function clearData() {
+            if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！建議先匯出備份。")) {
+                localStorage.removeItem('peGradingState_v2');
+                location.reload(); // 重新整理頁面
+            }
+        }
+
         // 渲染表格
         function renderTable() {
-            if (studentData.length === 0) return;
-
-            // 隱藏提示
+            if (appState.students.length === 0) return;
             document.getElementById('tableAlert').style.display = 'none';
 
             let fitnessTypeLabel = document.getElementById('fitnessType').options[document.getElementById('fitnessType').selectedIndex].text;
-            let skill1Label = document.getElementById('skill1').value;
-            let skill2Label = document.getElementById('skill2').value;
-            let knowledgeLabel = document.getElementById('knowledge').value;
-
+            
             let html = '<table id="scoreTable"><thead><tr>';
-            html += '<th>姓名</th>';
-            html += `<th>${fitnessTypeLabel}<br>(數據)</th>`;
-            html += `<th>技能一<br>${skill1Label}<br>0-20分</th>`;
-            html += `<th>技能二<br>${skill2Label}<br>0-20分</th>`;
-            html += `<th>知識<br>${knowledgeLabel}<br>0-10分</th>`;
-            html += '<th>態度:服裝<br>0-5分</th>';
-            html += '<th>態度:參與<br>0-5分</th>';
-            html += '<th>總成績</th>';
+            html += '<th>班別</th><th>學號</th><th>姓名</th>';
+            html += `<th id="th-fitness">${fitnessTypeLabel}<br><small>(請輸入數據)</small></th>`;
+            html += `<th id="th-skill1">技能一<br>${appState.settings.skill1}<br><small>0-20分</small></th>`;
+            html += `<th id="th-skill2">技能二<br>${appState.settings.skill2}<br><small>0-20分</small></th>`;
+            html += `<th id="th-knowledge">知識<br>${appState.settings.knowledge}<br><small>0-10分</small></th>`;
+            html += '<th>態度:服裝<br><small>0-5分</small></th>';
+            html += '<th>態度:參與<br><small>0-5分</small></th>';
+            html += '<th>總分</th>';
+            html += '<th>評級</th>';
             html += '</tr></thead><tbody>';
 
-            studentData.forEach((student, index) => {
-                let name = student['姓名'] || `學生${index+1}`;
+            appState.students.forEach((student, index) => {
                 html += `<tr>`;
-                html += `<td>${name}</td>`;
-                html += `<td><input type="number" step="0.1" class="fitness-input" value="0"></td>`;
-                html += `<td>${generateSelect(20, 0)}</td>`; // 技能一
-                html += `<td>${generateSelect(20, 0)}</td>`; // 技能二
-                html += `<td>${generateSelect(10, 0)}</td>`; // 知識
-                html += `<td>${generateSelect(5, 5)}</td>`;  // 服裝 (預設5分)
-                html += `<td>${generateSelect(5, 5)}</td>`;  // 參與 (預設5分)
-                html += `<td class="total-score">-</td>`;
+                html += `<td>${student.class}</td>`;
+                html += `<td>${student.studentNo}</td>`;
+                html += `<td>${student.name}</td>`;
+                // 數據輸入框與選單，並帶入已儲存的值
+                html += `<td><input type="number" step="0.1" value="${student.fitnessVal}" onchange="autoSave()"></td>`;
+                html += `<td>${generateSelect(20, student.skill1Val)}</td>`;
+                html += `<td>${generateSelect(20, student.skill2Val)}</td>`;
+                html += `<td>${generateSelect(10, student.knowledgeVal)}</td>`;
+                html += `<td>${generateSelect(5, student.attireVal)}</td>`;
+                html += `<td>${generateSelect(5, student.participationVal)}</td>`;
+                
+                html += `<td class="total-score-cell">${student.totalScore || '-'}</td>`;
+                html += `<td class="grade-cell">${student.grade || '-'}</td>`;
                 html += `</tr>`;
             });
 
             html += '</tbody></table>';
             document.getElementById('tableContainer').innerHTML = html;
             
-            // 顯示按鈕
             document.getElementById('calcBtn').style.display = 'inline-block';
             document.getElementById('exportBtn').style.display = 'inline-block';
         }
@@ -197,14 +360,14 @@
                 if (val <= 4) return 8;
                 if (val <= 8) return 16;
                 if (val <= 13) return 24;
-                if (val <= 21) return 32; // 補齊 19-21
+                if (val <= 21) return 32;
                 return 40;
             } else if (type === 'reach') {
                 if (val <= 12) return 0;
                 if (val <= 17) return 8;
                 if (val <= 22) return 16;
                 if (val <= 27) return 24;
-                if (val <= 32) return 32; // 補齊 32
+                if (val <= 32) return 32;
                 return 40;
             } else if (type === 'grip') {
                 if (val <= 12.4) return 0;
@@ -217,75 +380,101 @@
             return 0;
         }
 
-        // 執行計算
-        function calculateScores() {
+        // 計算評級 Grade
+        function getGrade(score) {
+            if (score >= 90) return 'A';
+            if (score >= 80) return 'A-';
+            if (score >= 70) return 'B+';
+            if (score >= 60) return 'B';
+            if (score >= 50) return 'B-';
+            return 'C+';
+        }
+
+        // 結算分數
+        function calculateScores(showAlert = true) {
+            autoSave(); // 先確保存檔最新
             let table = document.getElementById('scoreTable');
             if (!table) return;
 
-            let fitnessType = document.getElementById('fitnessType').value;
+            let fitnessType = appState.settings.fitnessType;
             let rows = table.getElementsByTagName('tbody')[0].rows;
 
             for (let i = 0; i < rows.length; i++) {
+                let s = appState.students[i];
                 let cells = rows[i].cells;
                 
-                // 抓取輸入值
-                let fitnessData = cells[1].querySelector('input').value;
-                let skill1 = parseInt(cells[2].querySelector('select').value);
-                let skill2 = parseInt(cells[3].querySelector('select').value);
-                let knowledge = parseInt(cells[4].querySelector('select').value);
-                let attire = parseInt(cells[5].querySelector('select').value);
-                let participation = parseInt(cells[6].querySelector('select').value);
+                // 計算
+                let fitnessScore = getFitnessScore(fitnessType, s.fitnessVal);
+                let total = fitnessScore + s.skill1Val + s.skill2Val + s.knowledgeVal + s.attireVal + s.participationVal;
+                let grade = getGrade(total);
 
-                // 計算各項分數
-                let fitnessScore = getFitnessScore(fitnessType, fitnessData);
-                let total = fitnessScore + skill1 + skill2 + knowledge + attire + participation;
+                // 更新 State
+                s.totalScore = total;
+                s.grade = grade;
 
-                // 更新總成績欄位，加上高亮提示
-                cells[7].innerHTML = `<b style="font-size:16px; color:#008CBA">${total}</b><br><small style="color:gray">(體適能得 ${fitnessScore} 分)</small>`;
+                // 更新畫面
+                cells[9].innerHTML = `<b>${total}</b><br><small style="color:gray; font-weight:normal;">(適能得${fitnessScore}分)</small>`;
+                
+                // 根據 Grade 給予不同顏色
+                let gradeColor = '#e53e3e'; // C+ 預設紅色
+                if(grade.includes('A')) gradeColor = '#38a169'; // A 綠色
+                else if(grade.includes('B')) gradeColor = '#3182ce'; // B 藍色
+                
+                cells[10].innerHTML = `<span style="color:${gradeColor};">${grade}</span>`;
             }
-            alert("計算完成！請檢查總成績欄位。");
+            saveStateToLocal(); // 儲存結算結果
+            
+            if(showAlert) alert("結算完成！請檢查右側的總分與評級。");
         }
 
         // 匯出為 Excel
         function exportExcel() {
+            autoSave(); // 先存檔
+            calculateScores(false); // 確保數字最新
+            
             let table = document.getElementById('scoreTable');
-            if (!table) {
-                alert("沒有資料可以匯出！");
-                return;
-            }
+            if (!table) return;
 
-            // 複製表格並清理內部元素 (將 input/select 轉換為純文字) 以便乾淨匯出
             let cloneTable = table.cloneNode(true);
             let rows = cloneTable.rows;
+            
+            // 替換 clone 裡面的 input 和 select 成純文字
             for (let i = 1; i < rows.length; i++) {
                 let cells = rows[i].cells;
+                let s = appState.students[i-1];
                 
-                // 體適能
-                cells[1].innerText = cells[1].querySelector('input').value;
-                // 拉單 (Skills, Knowledge, Attitude)
-                for(let j = 2; j <= 6; j++) {
-                    cells[j].innerText = cells[j].querySelector('select').value;
-                }
-                // 總分 (去除 HTML 標籤)
-                cells[7].innerText = cells[7].innerText.split('\n')[0].replace(" (體適能得 ", " (").replace(" 分)", "");
+                cells[3].innerText = s.fitnessVal;
+                cells[4].innerText = s.skill1Val;
+                cells[5].innerText = s.skill2Val;
+                cells[6].innerText = s.knowledgeVal;
+                cells[7].innerText = s.attireVal;
+                cells[8].innerText = s.participationVal;
+                
+                // 總分欄位清除非必要文字
+                cells[9].innerText = s.totalScore;
+                cells[10].innerText = s.grade;
             }
 
-            // 調整表頭寬度
             let ws = XLSX.utils.table_to_sheet(cloneTable);
+            
+            // 設定各欄寬度
             ws['!cols'] = [
-                {wch: 15}, // 姓名
-                {wch: 18}, // 體適能
-                {wch: 18}, // 技能一
-                {wch: 18}, // 技能二
+                {wch: 8},  // 班別
+                {wch: 10}, // 學號
+                {wch: 12}, // 姓名
+                {wch: 15}, // 體適能
+                {wch: 15}, // 技能一
+                {wch: 15}, // 技能二
                 {wch: 15}, // 知識
                 {wch: 10}, // 服裝
                 {wch: 10}, // 參與
-                {wch: 12}  // 總成績
+                {wch: 8},  // 總分
+                {wch: 8}   // 評級
             ];
 
             let wb = XLSX.utils.book_new();
             XLSX.book_append_sheet(wb, ws, "體育成績單");
-            XLSX.writeFile(wb, "體育成績單.xlsx");
+            XLSX.writeFile(wb, `體育成績單_${appState.settings.fitnessType}.xlsx`);
         }
     </script>
 </body>
