@@ -6,30 +6,54 @@
     <title>一至四年級體育課計分系統</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f9f9f9; }
-        h1, h2, h3 { color: #333; }
-        .container { display: flex; gap: 20px; }
-        .sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 300px; flex-shrink: 0; }
-        .main-content { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-grow: 1; overflow-x: auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f9f9f9; padding: 20px; box-sizing: border-box; }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        h3 { color: #333; margin-top: 0; }
+        
+        /* 將所有內容垂直堆疊 */
+        .content-wrapper { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        
+        /* 卡片樣式 */
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; }
+        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        
+        /* 表格區塊優化 */
+        .table-card { overflow-x: auto; /* 確保在手機上表格可以橫向滾動 */ }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; min-width: 600px; /* 確保表格在窄屏上不過度擠壓 */ }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button:hover { background-color: #45a049; }
-        .calc-btn { background-color: #008CBA; }
-        .calc-btn:hover { background-color: #007bb5; }
-        input[type="number"] { width: 60px; text-align: center; }
+        th { background-color: #f2f2f2; position: sticky; top: 0; } /* 固定表頭 */
+        
+        input[type="number"] { width: 60px; text-align: center; font-size: 14px; }
+        td select { width: 60px; font-size: 14px; } /* 表格內下拉選單寬度調整 */
+
+        /* 按鈕區 */
+        .action-buttons { text-align: center; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        @media (min-width: 600px) {
+            .action-buttons { flex-direction: row; justify-content: center; gap: 20px; }
+        }
+
+        button { color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; max-width: 250px; box-sizing: border-box; transition: background-color 0.2s; }
+        
+        button#calcBtn { background-color: #008CBA; }
+        button#calcBtn:hover { background-color: #007bb5; }
+        
+        button#exportBtn { background-color: #4CAF50; }
+        button#exportBtn:hover { background-color: #45a049; }
+        
+        /* 小提示樣式 */
+        .alert { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; text-align: center; }
+
     </style>
 </head>
 <body>
 
     <h1>🏃‍♂️ 一至四年級體育課計分系統</h1>
 
-    <div class="container">
-        <div class="sidebar">
+    <div class="content-wrapper">
+        <div class="card settings-card">
             <h3>📝 步驟 1：考試設定</h3>
             <div class="form-group">
                 <label>選擇本學期體適能項目 (佔 40%)</label>
@@ -46,7 +70,8 @@
                 <small>※ Excel 必須包含「姓名」欄位</small>
             </div>
 
-            <hr>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            
             <h3>📝 步驟 2：輸入考核題目</h3>
             <div class="form-group">
                 <label>技能考核題目 1</label>
@@ -62,13 +87,15 @@
             </div>
         </div>
 
-        <div class="main-content">
+        <div class="card table-card" id="tableCard">
             <h3>👨‍🎓 學生評分表</h3>
-            <p>請先上傳名單，然後在下方表格直接輸入數據或選擇分數（拉單）。</p>
+            <div class="alert" id="tableAlert">請先上傳名單，然後在下方表格直接輸入數據或選擇分數。</div>
             <div id="tableContainer"></div>
             
-            <button class="calc-btn" id="calcBtn" style="display:none;" onclick="calculateScores()">🧮 計算總成績</button>
-            <button id="exportBtn" style="display:none;" onclick="exportExcel()">📥 下載最終成績單 (Excel)</button>
+            <div class="action-buttons">
+                <button id="calcBtn" style="display:none;" onclick="calculateScores()">🧮 計算總成績</button>
+                <button id="exportBtn" style="display:none;" onclick="exportExcel()">📥 下載成績單 (Excel)</button>
+            </div>
         </div>
     </div>
 
@@ -114,6 +141,9 @@
         function renderTable() {
             if (studentData.length === 0) return;
 
+            // 隱藏提示
+            document.getElementById('tableAlert').style.display = 'none';
+
             let fitnessTypeLabel = document.getElementById('fitnessType').options[document.getElementById('fitnessType').selectedIndex].text;
             let skill1Label = document.getElementById('skill1').value;
             let skill2Label = document.getElementById('skill2').value;
@@ -122,12 +152,12 @@
             let html = '<table id="scoreTable"><thead><tr>';
             html += '<th>姓名</th>';
             html += `<th>${fitnessTypeLabel}<br>(數據)</th>`;
-            html += `<th>技能一<br>(${skill1Label})<br>0-20分</th>`;
-            html += `<th>技能二<br>(${skill2Label})<br>0-20分</th>`;
-            html += `<th>知識<br>(${knowledgeLabel})<br>0-10分</th>`;
-            html += '<th>態度:服裝整齊<br>0-5分</th>';
-            html += '<th>態度:積極參與<br>0-5分</th>';
-            html += '<th>總成績<br>(自動計算)</th>';
+            html += `<th>技能一<br>${skill1Label}<br>0-20分</th>`;
+            html += `<th>技能二<br>${skill2Label}<br>0-20分</th>`;
+            html += `<th>知識<br>${knowledgeLabel}<br>0-10分</th>`;
+            html += '<th>態度:服裝<br>0-5分</th>';
+            html += '<th>態度:參與<br>0-5分</th>';
+            html += '<th>總成績</th>';
             html += '</tr></thead><tbody>';
 
             studentData.forEach((student, index) => {
@@ -147,7 +177,7 @@
             html += '</tbody></table>';
             document.getElementById('tableContainer').innerHTML = html;
             
-            // 顯示計算和下載按鈕
+            // 顯示按鈕
             document.getElementById('calcBtn').style.display = 'inline-block';
             document.getElementById('exportBtn').style.display = 'inline-block';
         }
@@ -210,10 +240,10 @@
                 let fitnessScore = getFitnessScore(fitnessType, fitnessData);
                 let total = fitnessScore + skill1 + skill2 + knowledge + attire + participation;
 
-                // 更新總成績欄位，並加上明細方便核對
-                cells[7].innerHTML = `<b>${total}</b> <br><small style="color:gray">(體適能得 ${fitnessScore} 分)</small>`;
+                // 更新總成績欄位，加上高亮提示
+                cells[7].innerHTML = `<b style="font-size:16px; color:#008CBA">${total}</b><br><small style="color:gray">(體適能得 ${fitnessScore} 分)</small>`;
             }
-            alert("計算完成！請檢查最右側的總成績。");
+            alert("計算完成！請檢查總成績欄位。");
         }
 
         // 匯出為 Excel
@@ -240,7 +270,21 @@
                 cells[7].innerText = cells[7].innerText.split('\n')[0].replace(" (體適能得 ", " (").replace(" 分)", "");
             }
 
-            let wb = XLSX.utils.table_to_book(cloneTable, {sheet: "體育成績單"});
+            // 調整表頭寬度
+            let ws = XLSX.utils.table_to_sheet(cloneTable);
+            ws['!cols'] = [
+                {wch: 15}, // 姓名
+                {wch: 18}, // 體適能
+                {wch: 18}, // 技能一
+                {wch: 18}, // 技能二
+                {wch: 15}, // 知識
+                {wch: 10}, // 服裝
+                {wch: 10}, // 參與
+                {wch: 12}  // 總成績
+            ];
+
+            let wb = XLSX.utils.book_new();
+            XLSX.book_append_sheet(wb, ws, "體育成績單");
             XLSX.writeFile(wb, "體育成績單.xlsx");
         }
     </script>
