@@ -44,8 +44,6 @@
 
         .alert { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: bold;}
         .small-text { font-size: 12px; color: #718096; margin-top: 4px; display: block; }
-        
-        /* 讓總分顯示更明顯 */
         .highlight-total { font-size: 16px; color: #2b6cb0; }
     </style>
 </head>
@@ -61,7 +59,8 @@
                     <div class="form-group">
                         <label>選擇本學期體適能項目 (佔 40%)</label>
                         <select id="fitnessType" onchange="handleFitnessTypeChange()">
-                            <option value="run">四年級耐力跑 (圈數)</option>
+                            <option value="run13">一至三年級耐力跑 (圈數)</option>
+                            <option value="run4">四年級耐力跑 (圈數)</option>
                             <option value="situp">仰卧起坐 (次)</option>
                             <option value="reach">坐地前身 (cm)</option>
                             <option value="grip">手握力 (kg)</option>
@@ -70,7 +69,7 @@
                     <div class="form-group">
                         <label>上傳 Excel 檔案 (空白名單 / 之前匯出的成績單)</label>
                         <input type="file" id="fileUpload" accept=".xlsx, .xls">
-                        <span class="small-text">※ 支援匯入全新的班名單，也支援匯入之前從本系統下載、打分到一半的 Excel 成績單。</span>
+                        <span class="small-text">※ 支援匯入全新的班名單，也支援匯入之前從本系統下載的 Excel 成績單。</span>
                     </div>
                 </div>
 
@@ -120,7 +119,7 @@
     <script>
         let appState = {
             settings: {
-                fitnessType: 'run',
+                fitnessType: 'run13',
                 skill1: '籃球運球',
                 skill2: '籃球投籃',
                 knowledge: '運動安全知識'
@@ -129,14 +128,14 @@
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v4');
+            let savedState = localStorage.getItem('peGradingState_v5');
             if (savedState) {
                 try {
                     appState = JSON.parse(savedState);
                     restoreUIFromState();
                     if (appState.students.length > 0) {
                         renderTable();
-                        calculateScores(); // 載入時自動計算一次
+                        calculateScores(); 
                     }
                 } catch (e) {
                     console.error("載入暫存失敗", e);
@@ -144,14 +143,12 @@
             }
         };
 
-        // 處理體適能項目變更（因為拉單跟輸入框格式不同，需要重新渲染表格）
         function handleFitnessTypeChange() {
             appState.settings.fitnessType = document.getElementById('fitnessType').value;
             renderTable();
             autoSave();
         }
 
-        // 核心：自動儲存與自動結算
         function autoSave() {
             appState.settings.fitnessType = document.getElementById('fitnessType').value;
             appState.settings.skill1 = document.getElementById('skill1').value;
@@ -164,8 +161,6 @@
                     let rows = table.getElementsByTagName('tbody')[0].rows;
                     for (let i = 0; i < rows.length; i++) {
                         let cells = rows[i].cells;
-                        
-                        // 抓取體適能數據 (可能是 input 或 select)
                         let fitnessInputElem = cells[3].querySelector('.fitness-input');
                         appState.students[i].fitnessVal = parseFloat(fitnessInputElem.value) || 0;
                         
@@ -178,10 +173,9 @@
                 }
             }
             
-            // 每次儲存完直接呼叫計算，達到「免按鈕自動結算」效果
             calculateScores();
 
-            localStorage.setItem('peGradingState_v4', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v5', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -200,7 +194,6 @@
             document.getElementById('knowledge').value = appState.settings.knowledge;
         }
 
-        // 產生一般 0-X 的拉單
         function generateSelect(maxScore, defaultValue) {
             let options = '';
             for (let i = 0; i <= maxScore; i++) {
@@ -210,15 +203,12 @@
             return `<select onchange="autoSave()">${options}</select>`;
         }
 
-        // 產生體適能專屬的輸入元件 (耐力跑是拉單，其他是手動輸入框)
         function generateFitnessInput(type, defaultValue) {
-            if (type === 'run') {
+            if (type === 'run13' || type === 'run4') {
                 let options = '';
-                // 為了安全起見，加入 0 圈選項
                 let zeroSelected = (0 === defaultValue) ? 'selected' : '';
                 options += `<option value="0" ${zeroSelected}>0</option>`;
                 
-                // 產生 0.5 到 30 的選項，每次遞增 0.5
                 for (let i = 0.5; i <= 30; i += 0.5) {
                     let selected = (i === defaultValue) ? 'selected' : '';
                     options += `<option value="${i}" ${selected}>${i}</option>`;
@@ -229,7 +219,6 @@
             }
         }
 
-        // 解析匯入的 Excel
         document.getElementById('fileUpload').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if (!file) return;
@@ -285,7 +274,7 @@
                 });
                 
                 renderTable();
-                autoSave(); // 會自動觸發計算
+                autoSave(); 
                 alert("Excel 檔案讀取成功！");
                 document.getElementById('fileUpload').value = ""; 
             };
@@ -294,7 +283,7 @@
 
         function clearData() {
             if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！建議先匯出。")) {
-                localStorage.removeItem('peGradingState_v4');
+                localStorage.removeItem('peGradingState_v5');
                 location.reload(); 
             }
         }
@@ -323,7 +312,6 @@
                 html += `<td>${student.studentNo}</td>`;
                 html += `<td>${student.name}</td>`;
                 
-                // 動態產生體適能輸入框 (拉單 或 手動輸入)
                 html += `<td>${generateFitnessInput(appState.settings.fitnessType, student.fitnessVal)}</td>`;
                 
                 html += `<td>${generateSelect(20, student.skill1Val)}</td>`;
@@ -342,10 +330,18 @@
             document.getElementById('exportBtn').style.display = 'inline-block';
         }
 
-        // ★ 更新後的體適能計分邏輯 (包含四年級耐力跑) ★
+        // ★ 核心拆分：一至三年級 vs 四年級 耐力跑邏輯 ★
         function getFitnessScore(type, val) {
             val = parseFloat(val) || 0;
-            if (type === 'run') {
+            if (type === 'run13') {
+                let dist = val * 60; // 圈數 x 60米
+                if (dist < 640) return 0;
+                if (dist <= 709) return 8;
+                if (dist <= 769) return 16;
+                if (dist <= 839) return 24;
+                if (dist <= 889) return 32;
+                return 40;
+            } else if (type === 'run4') {
                 let dist = val * 60; // 圈數 x 60米
                 if (dist < 960) return 0;
                 if (dist <= 1089) return 8;
@@ -386,7 +382,6 @@
             return 'C+';
         }
 
-        // 無縫自動結算，直接更新畫面，不跳出提示窗
         function calculateScores() {
             let table = document.getElementById('scoreTable');
             if (!table) return;
@@ -405,7 +400,7 @@
                 s.totalScore = total;
                 s.grade = grade;
 
-                // 即時替換右側總分和評級欄位
+                // 畫面上顯示總分與體適能實際得分
                 cells[9].innerHTML = `<b class="highlight-total">${total}</b><br><small style="color:gray; font-weight:normal;">(適能得${fitnessScore}分)</small>`;
                 
                 let gradeColor = '#e53e3e'; 
@@ -417,7 +412,7 @@
         }
 
         function exportExcel() {
-            autoSave(); // 確保資料是最新狀態
+            autoSave(); 
             let exportData = [];
             
             appState.students.forEach(s => {
