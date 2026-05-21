@@ -24,7 +24,6 @@
         th, td { border: 1px solid #e2e8f0; padding: 8px 4px; text-align: center; vertical-align: middle; }
         th { background-color: #edf2f7; position: sticky; top: 0; color: #2d3748; z-index: 10; }
         
-        /* 稍微放寬下拉選單以容納文字 */
         td select { width: auto; min-width: 70px; max-width: 120px; font-size: 14px; padding: 6px; border: 1px solid #cbd5e0; border-radius: 4px; }
         
         .grade-cell { font-weight: bold; font-size: 18px; color: #e53e3e; }
@@ -140,7 +139,7 @@
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v9');
+            let savedState = localStorage.getItem('peGradingState_v10');
             if (savedState) {
                 try {
                     appState = JSON.parse(savedState);
@@ -187,7 +186,7 @@
             
             calculateScores();
 
-            localStorage.setItem('peGradingState_v9', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v10', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -215,33 +214,27 @@
             return `<select onchange="autoSave()">${options}</select>`;
         }
 
-        // 處理自訂輸入邏輯（跳出視窗輸入）
         window.handleCustomFitness = function(selectElem) {
             if (selectElem.value === 'custom') {
                 let val = prompt("請輸入成績 (例如：55 或 13.5)：");
                 if (val !== null && !isNaN(val) && val.trim() !== '') {
-                    // 檢查選項是否已存在，避免重複
                     let exists = Array.from(selectElem.options).some(opt => opt.value == val);
                     if (!exists) {
                         let newOption = new Option(val, val);
-                        // 將新選項插在「自訂輸入」選項的前面
                         selectElem.insertBefore(newOption, selectElem.lastElementChild);
                     }
                     selectElem.value = val;
                 } else {
-                    selectElem.value = "0"; // 放棄或輸入錯誤時，重置回0
+                    selectElem.value = "0"; 
                 }
             }
             autoSave();
         };
 
-        // 修改為產生下拉選單
         function generateFitnessInput(type, defaultValue) {
-            // 耐力跑（保留 0.5 的級距）
             if (type === 'run13' || type === 'run4') {
                 let options = '';
                 let foundDefault = false;
-                
                 for (let i = 0; i <= 30; i += 0.5) {
                     let selected = (i == defaultValue) ? 'selected' : '';
                     if (selected) foundDefault = true;
@@ -253,17 +246,14 @@
                 options += `<option value="custom">自訂輸入...</option>`;
                 return `<select class="fitness-input" onchange="handleCustomFitness(this)">${options}</select>`;
             } 
-            // 仰臥起坐、坐地前伸、手握力 (0-50 整數)
             else {
                 let options = '';
                 let foundDefault = false;
-                
                 for (let i = 0; i <= 50; i++) {
                     let selected = (i == defaultValue) ? 'selected' : '';
                     if (selected) foundDefault = true;
                     options += `<option value="${i}" ${selected}>${i}</option>`;
                 }
-                // 如果匯入的值帶有小數點或是大於 50，把它補進選單裡
                 if (!foundDefault && defaultValue !== undefined && defaultValue !== '') {
                     options += `<option value="${defaultValue}" selected>${defaultValue}</option>`;
                 }
@@ -335,8 +325,8 @@
         });
 
         function clearData() {
-            if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！建議先匯出。")) {
-                localStorage.removeItem('peGradingState_v9');
+            if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！")) {
+                localStorage.removeItem('peGradingState_v10');
                 location.reload(); 
             }
         }
@@ -446,7 +436,7 @@
                 if (val <= 17.4) return 0;
                 if (val <= 20.4) return 8;
                 if (val <= 23.9) return 16;
-                if (val <= 27.9) return 24;
+                { if (val <= 27.9) return 24; }
                 if (val <= 30.9) return 32;
                 return 40; 
             }
@@ -490,6 +480,7 @@
             }
         }
 
+        // 徹底修正 Bug 的匯出功能
         function exportExcel() {
             let btn = document.getElementById('exportBtn');
             btn.innerText = "⏳ 正在處理下載...";
@@ -529,7 +520,8 @@
                 ];
 
                 let wb = XLSX.utils.book_new();
-                XLSX.book_append_sheet(wb, ws, "體育成績單");
+                // ★ 關鍵修正：加上 .utils 確保調用正確指令 ★
+                XLSX.utils.book_append_sheet(wb, ws, "體育成績單");
                 
                 let dateStr = new Date().toISOString().split('T')[0];
                 let filename = `體育成績單_${appState.settings.fitnessType}_${dateStr}.xlsx`;
