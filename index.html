@@ -59,11 +59,22 @@
                     <div class="form-group">
                         <label>選擇本學期體適能項目 (佔 40%)</label>
                         <select id="fitnessType" onchange="handleFitnessTypeChange()">
-                            <option value="run13">一至三年級耐力跑 (圈數)</option>
-                            <option value="run4">四年級耐力跑 (圈數)</option>
-                            <option value="situp">仰卧起坐 (次)</option>
-                            <option value="reach">坐地前身 (cm)</option>
-                            <option value="grip">手握力 (kg)</option>
+                            <optgroup label="耐力跑 (圈數)">
+                                <option value="run13">一至三年級耐力跑</option>
+                                <option value="run4">四年級耐力跑</option>
+                            </optgroup>
+                            <optgroup label="仰卧起坐 (次)">
+                                <option value="situp13">一至三年級仰卧起坐</option>
+                                <option value="situp4">四年級仰卧起坐</option>
+                            </optgroup>
+                            <optgroup label="坐地前身 (cm)">
+                                <option value="reach13">一至三年級坐地前身</option>
+                                <option value="reach4">四年級坐地前身</option>
+                            </optgroup>
+                            <optgroup label="手握力 (kg)">
+                                <option value="grip13">一至三年級手握力</option>
+                                <option value="grip4">四年級手握力</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div class="form-group">
@@ -128,7 +139,8 @@
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v5');
+            // 版本號已更新至 v7，確保吃到最新邏輯
+            let savedState = localStorage.getItem('peGradingState_v7');
             if (savedState) {
                 try {
                     appState = JSON.parse(savedState);
@@ -175,7 +187,7 @@
             
             calculateScores();
 
-            localStorage.setItem('peGradingState_v5', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v7', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -283,7 +295,7 @@
 
         function clearData() {
             if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！建議先匯出。")) {
-                localStorage.removeItem('peGradingState_v5');
+                localStorage.removeItem('peGradingState_v7');
                 location.reload(); 
             }
         }
@@ -296,7 +308,7 @@
             
             let html = '<table id="scoreTable"><thead><tr>';
             html += '<th>班別</th><th>學號</th><th>姓名</th>';
-            html += `<th id="th-fitness">${fitnessTypeLabel}<br><small>(數據)</small></th>`;
+            html += `<th id="th-fitness">${fitnessTypeLabel}<br><small>(請輸入數據)</small></th>`;
             html += `<th id="th-skill1">技能一<br>${appState.settings.skill1}<br><small>0-20分</small></th>`;
             html += `<th id="th-skill2">技能二<br>${appState.settings.skill2}<br><small>0-20分</small></th>`;
             html += `<th id="th-knowledge">知識<br>${appState.settings.knowledge}<br><small>0-10分</small></th>`;
@@ -330,46 +342,83 @@
             document.getElementById('exportBtn').style.display = 'inline-block';
         }
 
-        // ★ 核心拆分：一至三年級 vs 四年級 耐力跑邏輯 ★
+        // ★ 核心邏輯：所有體適能項目的分級計分標準 ★
         function getFitnessScore(type, val) {
             val = parseFloat(val) || 0;
+            
+            // 1. 耐力跑
             if (type === 'run13') {
-                let dist = val * 60; // 圈數 x 60米
+                let dist = val * 60;
                 if (dist < 640) return 0;
                 if (dist <= 709) return 8;
                 if (dist <= 769) return 16;
                 if (dist <= 839) return 24;
                 if (dist <= 889) return 32;
                 return 40;
-            } else if (type === 'run4') {
-                let dist = val * 60; // 圈數 x 60米
+            } 
+            else if (type === 'run4') {
+                let dist = val * 60;
                 if (dist < 960) return 0;
                 if (dist <= 1089) return 8;
                 if (dist <= 1199) return 16;
                 if (dist <= 1319) return 24;
                 if (dist <= 1439) return 32;
                 return 40;
-            } else if (type === 'situp') {
+            } 
+            
+            // 2. 仰卧起坐
+            else if (type === 'situp13') {
                 if (val <= 4) return 8;
-                if (val <= 8) return 16;
-                if (val <= 13) return 24;
-                if (val <= 21) return 32;
-                return 40;
-            } else if (type === 'reach') {
+                if (val <= 11) return 16;
+                if (val <= 17) return 24;
+                if (val <= 21) return 32; 
+                return 40; // 22次或以上
+            } 
+            else if (type === 'situp4') {
+                if (val <= 8) return 0;
+                if (val <= 13) return 8;
+                if (val <= 19) return 16;
+                if (val <= 23) return 24;
+                if (val <= 29) return 32;
+                return 40; // 30次或以上
+            } 
+            
+            // 3. 坐地前身
+            else if (type === 'reach13') {
+                if (val <= 13) return 0;
+                if (val <= 17) return 8;
+                if (val <= 22) return 16;
+                if (val <= 26) return 24;
+                if (val <= 30) return 32;
+                return 40; // 31cm或以上
+            } 
+            else if (type === 'reach4') {
                 if (val <= 12) return 0;
                 if (val <= 17) return 8;
                 if (val <= 22) return 16;
                 if (val <= 27) return 24;
-                if (val <= 32) return 32;
-                return 40;
-            } else if (type === 'grip') {
+                if (val <= 31) return 32;
+                return 40; // 32cm或以上
+            } 
+            
+            // 4. 手握力
+            else if (type === 'grip13') {
                 if (val <= 12.4) return 0;
                 if (val <= 13.9) return 8;
                 if (val <= 16.4) return 16;
                 if (val <= 19.4) return 24;
                 if (val <= 21.4) return 32;
-                return 40;
+                return 40; // 21.5kg或以上
+            } 
+            else if (type === 'grip4') {
+                if (val <= 17.4) return 0;
+                if (val <= 20.4) return 8;
+                if (val <= 23.9) return 16;
+                if (val <= 27.9) return 24;
+                if (val <= 30.9) return 32;
+                return 40; // 31kg或以上
             }
+
             return 0;
         }
 
