@@ -20,13 +20,14 @@
         input[type="file"] { display: block; width: 100%; padding: 8px; font-size: 14px; border: 1px dashed #a0aec0; border-radius: 6px; background-color: #f7fafc; cursor: pointer; }
         
         .table-card { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; min-width: 950px; }
         th, td { border: 1px solid #e2e8f0; padding: 8px 4px; text-align: center; vertical-align: middle; }
         th { background-color: #edf2f7; position: sticky; top: 0; color: #2d3748; z-index: 10; }
         
         td select { width: auto; min-width: 70px; max-width: 120px; font-size: 14px; padding: 6px; border: 1px solid #cbd5e0; border-radius: 4px; }
         
-        .grade-cell { font-weight: bold; font-size: 18px; color: #e53e3e; }
+        .grade-cell { font-weight: bold; font-size: 18px; color: #2b6cb0; }
+        .submitted-cell { font-weight: bold; font-size: 16px; color: #2d3748; }
 
         .action-buttons { text-align: center; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
         @media (min-width: 600px) {
@@ -44,7 +45,7 @@
 
         .alert { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: bold;}
         .small-text { font-size: 12px; color: #718096; margin-top: 4px; display: block; }
-        .highlight-total { font-size: 16px; color: #2b6cb0; }
+        .highlight-total { font-size: 16px; color: #4a5568; }
     </style>
 </head>
 <body>
@@ -139,7 +140,7 @@
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v10');
+            let savedState = localStorage.getItem('peGradingState_v11');
             if (savedState) {
                 try {
                     appState = JSON.parse(savedState);
@@ -186,7 +187,7 @@
             
             calculateScores();
 
-            localStorage.setItem('peGradingState_v10', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v11', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -311,8 +312,9 @@
                         knowledgeVal: parseInt(getVal(knowledgeIdx, 0)) || 0,
                         attireVal: parseInt(getVal(attireIdx, 5)) || 5, 
                         participationVal: parseInt(getVal(participationIdx, 5)) || 5, 
-                        totalScore: 0, 
-                        grade: '-'
+                        totalScore: 0,
+                        submittedScore: 0,
+                        gradeLetter: '-'
                     };
                 });
                 
@@ -326,7 +328,7 @@
 
         function clearData() {
             if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！")) {
-                localStorage.removeItem('peGradingState_v10');
+                localStorage.removeItem('peGradingState_v11');
                 location.reload(); 
             }
         }
@@ -346,7 +348,8 @@
             html += '<th>態度:服裝<br><small>0-5分</small></th>';
             html += '<th>態度:參與<br><small>0-5分</small></th>';
             html += '<th>總分</th>';
-            html += '<th>評級</th>';
+            html += '<th>呈分</th>';
+            html += '<th>Grade</th>';
             html += '</tr></thead><tbody>';
 
             appState.students.forEach((student, index) => {
@@ -364,6 +367,7 @@
                 html += `<td>${generateSelect(5, student.participationVal)}</td>`;
                 
                 html += `<td class="total-score-cell">-</td>`;
+                html += `<td class="submitted-cell">-</td>`;
                 html += `<td class="grade-cell">-</td>`;
                 html += `</tr>`;
             });
@@ -435,21 +439,21 @@
             else if (type === 'grip4') {
                 if (val <= 17.4) return 0;
                 if (val <= 20.4) return 8;
-                if (val <= 23.9) return 16;
-                { if (val <= 27.9) return 24; }
+                { if (val <= 23.9) return 16; }
+                if (val <= 27.9) return 24;
                 if (val <= 30.9) return 32;
                 return 40; 
             }
             return 0;
         }
 
-        function getGrade(score) {
-            if (score >= 90) return 'A';
-            if (score >= 80) return 'A-';
-            if (score >= 70) return 'B+';
-            if (score >= 60) return 'B';
-            if (score >= 50) return 'B-';
-            return 'C+';
+        // 根據呈分計算對應的 Grade
+        function getGradeLetter(subScore) {
+            if (subScore >= 85) return 'A';
+            if (subScore >= 70) return 'B';
+            if (subScore >= 60) return 'C';
+            if (subScore >= 30) return 'D';
+            return 'E';
         }
 
         function calculateScores() {
@@ -465,22 +469,30 @@
                 
                 let fitnessScore = getFitnessScore(fitnessType, s.fitnessVal);
                 let total = fitnessScore + s.skill1Val + s.skill2Val + s.knowledgeVal + s.attireVal + s.participationVal;
-                let grade = getGrade(total);
+                
+                // 核心邏輯：將總分個位化成 0 或 5（四捨五入至最接近的 5 倍數）
+                let submitted = Math.round(total / 5) * 5;
+                let gradeLet = getGradeLetter(submitted);
 
                 s.totalScore = total;
-                s.grade = grade;
+                s.submittedScore = submitted;
+                s.gradeLetter = gradeLet;
 
+                // 渲染畫面欄位
                 cells[9].innerHTML = `<b class="highlight-total">${total}</b><br><small style="color:gray; font-weight:normal;">(適能得${fitnessScore}分)</small>`;
+                cells[10].innerHTML = `<span class="submitted-cell">${submitted}</span>`;
                 
-                let gradeColor = '#e53e3e'; 
-                if(grade.includes('A')) gradeColor = '#38a169'; 
-                else if(grade.includes('B')) gradeColor = '#3182ce'; 
+                // 根據 Grade 設定顏色美化
+                let gradeColor = '#e53e3e'; // E 預設紅色
+                if(gradeLet === 'A') gradeColor = '#38a169'; 
+                else if(gradeLet === 'B') gradeColor = '#3182ce';
+                else if(gradeLet === 'C') gradeColor = '#dd6b20';
+                else if(gradeLet === 'D') gradeColor = '#4a5568';
                 
-                cells[10].innerHTML = `<span style="color:${gradeColor};">${grade}</span>`;
+                cells[11].innerHTML = `<span style="color:${gradeColor}; font-weight:bold; font-size:16px;">${gradeLet}</span>`;
             }
         }
 
-        // 徹底修正 Bug 的匯出功能
         function exportExcel() {
             let btn = document.getElementById('exportBtn');
             btn.innerText = "⏳ 正在處理下載...";
@@ -506,7 +518,8 @@
                         "態度:服裝": s.attireVal,
                         "態度:參與": s.participationVal,
                         "總分": s.totalScore,
-                        "評級": s.grade
+                        "呈分": s.submittedScore,
+                        "Grade": s.gradeLetter
                     });
                 });
 
@@ -516,11 +529,10 @@
                     {wch: 8},  {wch: 10}, {wch: 12}, 
                     {wch: 15}, {wch: 10}, {wch: 10}, 
                     {wch: 10}, {wch: 12}, {wch: 12}, 
-                    {wch: 8},  {wch: 8}   
+                    {wch: 8},  {wch: 8},  {wch: 8}   
                 ];
 
                 let wb = XLSX.utils.book_new();
-                // ★ 關鍵修正：加上 .utils 確保調用正確指令 ★
                 XLSX.utils.book_append_sheet(wb, ws, "體育成績單");
                 
                 let dateStr = new Date().toISOString().split('T')[0];
