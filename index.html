@@ -140,7 +140,7 @@
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v11');
+            let savedState = localStorage.getItem('peGradingState_v12');
             if (savedState) {
                 try {
                     appState = JSON.parse(savedState);
@@ -187,7 +187,7 @@
             
             calculateScores();
 
-            localStorage.setItem('peGradingState_v11', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v12', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -300,18 +300,29 @@
                 let attireIdx = headers.findIndex(h => h && h.toString().includes('服裝'));
                 let participationIdx = headers.findIndex(h => h && h.toString().includes('參與'));
 
+                // 安全解析分數的輔助函式（防止 0 被誤判為空）
+                let parseScore = (val, defaultVal) => {
+                    if (val === undefined || val === null || val.toString().trim() === '') return defaultVal;
+                    let parsed = parseInt(val);
+                    return isNaN(parsed) ? defaultVal : parsed;
+                };
+                let parseFitness = (val, defaultVal) => {
+                    if (val === undefined || val === null || val.toString().trim() === '') return defaultVal;
+                    let parsed = parseFloat(val);
+                    return isNaN(parsed) ? defaultVal : parsed;
+                };
+
                 appState.students = records.map(row => {
-                    let getVal = (idx, defaultVal) => (idx !== -1 && row[idx] !== undefined) ? row[idx] : defaultVal;
                     return {
-                        class: getVal(classIdx, '-'),
-                        studentNo: getVal(studentNoIdx, '-'),
+                        class: (classIdx !== -1 && row[classIdx] !== undefined) ? row[classIdx] : '-',
+                        studentNo: (studentNoIdx !== -1 && row[studentNoIdx] !== undefined) ? row[studentNoIdx] : '-',
                         name: row[nameIdx],
-                        fitnessVal: parseFloat(getVal(fitnessIdx, 0)) || 0,
-                        skill1Val: parseInt(getVal(skill1Idx, 0)) || 0,
-                        skill2Val: parseInt(getVal(skill2Idx, 0)) || 0,
-                        knowledgeVal: parseInt(getVal(knowledgeIdx, 0)) || 0,
-                        attireVal: parseInt(getVal(attireIdx, 5)) || 5, 
-                        participationVal: parseInt(getVal(participationIdx, 5)) || 5, 
+                        fitnessVal: (fitnessIdx !== -1) ? parseFitness(row[fitnessIdx], 0) : 0,
+                        skill1Val: (skill1Idx !== -1) ? parseScore(row[skill1Idx], 0) : 0,
+                        skill2Val: (skill2Idx !== -1) ? parseScore(row[skill2Idx], 0) : 0,
+                        knowledgeVal: (knowledgeIdx !== -1) ? parseScore(row[knowledgeIdx], 10) : 10, // 預設 10 分
+                        attireVal: (attireIdx !== -1) ? parseScore(row[attireIdx], 5) : 5, 
+                        participationVal: (participationIdx !== -1) ? parseScore(row[participationIdx], 5) : 5, 
                         totalScore: 0,
                         submittedScore: 0,
                         gradeLetter: '-'
@@ -328,7 +339,7 @@
 
         function clearData() {
             if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！")) {
-                localStorage.removeItem('peGradingState_v11');
+                localStorage.removeItem('peGradingState_v12');
                 location.reload(); 
             }
         }
@@ -439,7 +450,7 @@
             else if (type === 'grip4') {
                 if (val <= 17.4) return 0;
                 if (val <= 20.4) return 8;
-                { if (val <= 23.9) return 16; }
+                if (val <= 23.9) return 16;
                 if (val <= 27.9) return 24;
                 if (val <= 30.9) return 32;
                 return 40; 
@@ -447,7 +458,6 @@
             return 0;
         }
 
-        // 根據呈分計算對應的 Grade
         function getGradeLetter(subScore) {
             if (subScore >= 85) return 'A';
             if (subScore >= 70) return 'B';
@@ -470,7 +480,6 @@
                 let fitnessScore = getFitnessScore(fitnessType, s.fitnessVal);
                 let total = fitnessScore + s.skill1Val + s.skill2Val + s.knowledgeVal + s.attireVal + s.participationVal;
                 
-                // 核心邏輯：將總分個位化成 0 或 5（四捨五入至最接近的 5 倍數）
                 let submitted = Math.round(total / 5) * 5;
                 let gradeLet = getGradeLetter(submitted);
 
@@ -478,12 +487,10 @@
                 s.submittedScore = submitted;
                 s.gradeLetter = gradeLet;
 
-                // 渲染畫面欄位
                 cells[9].innerHTML = `<b class="highlight-total">${total}</b><br><small style="color:gray; font-weight:normal;">(適能得${fitnessScore}分)</small>`;
                 cells[10].innerHTML = `<span class="submitted-cell">${submitted}</span>`;
                 
-                // 根據 Grade 設定顏色美化
-                let gradeColor = '#e53e3e'; // E 預設紅色
+                let gradeColor = '#e53e3e'; 
                 if(gradeLet === 'A') gradeColor = '#38a169'; 
                 else if(gradeLet === 'B') gradeColor = '#3182ce';
                 else if(gradeLet === 'C') gradeColor = '#dd6b20';
