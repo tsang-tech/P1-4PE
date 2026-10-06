@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一至四及六年級體育課計分系統</title>
+    <title>一至四年級體育課計分系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f0f4f8; padding: 15px; box-sizing: border-box; }
@@ -46,11 +46,19 @@
         .alert { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; text-align: center; font-weight: bold;}
         .small-text { font-size: 12px; color: #718096; margin-top: 4px; display: block; }
         .highlight-total { font-size: 16px; color: #4a5568; }
+        
+        /* 班別篩選區塊樣式 */
+        .table-header-flex { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        @media (min-width: 600px) {
+            .table-header-flex { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+        .class-filter { display: flex; align-items: center; gap: 10px; background: #edf2f7; padding: 8px 15px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .class-filter select { padding: 6px 10px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 14px; font-weight: bold; color: #2d3748;}
     </style>
 </head>
 <body>
 
-    <h1>🏃‍♂️ 一至四及六年級體育課計分系統</h1>
+    <h1>🏃‍♂️ 一至四年級體育課計分系統</h1>
 
     <div class="content-wrapper">
         <div class="card settings-card">
@@ -62,19 +70,19 @@
                         <select id="fitnessType" onchange="handleFitnessTypeChange()">
                             <optgroup label="耐力跑 (圈數)">
                                 <option value="run13">一至三年級耐力跑</option>
-                                <option value="run4">四及六年級耐力跑</option>
+                                <option value="run4">四年級耐力跑</option>
                             </optgroup>
                             <optgroup label="仰卧起坐 (次)">
                                 <option value="situp13">一至三年級仰卧起坐</option>
-                                <option value="situp4">四及六年級仰卧起坐</option>
+                                <option value="situp4">四年級仰卧起坐</option>
                             </optgroup>
                             <optgroup label="坐地前身 (cm)">
                                 <option value="reach13">一至三年級坐地前身</option>
-                                <option value="reach4">四年及六級坐地前身</option>
+                                <option value="reach4">四年級坐地前身</option>
                             </optgroup>
                             <optgroup label="手握力 (kg)">
                                 <option value="grip13">一至三年級手握力</option>
-                                <option value="grip4">四及六年級手握力</option>
+                                <option value="grip4">四年級手握力</option>
                             </optgroup>
                         </select>
                     </div>
@@ -114,10 +122,19 @@
         </div>
 
         <div class="card table-card" id="tableCard">
-            <h3>👨‍🎓 學生評分表 
-                <span style="font-size: 12px; color: #718096; margin-left: 10px;">(分數將自動即時結算)</span>
-                <span id="saveStatus" style="font-size: 12px; color: #38a169; float: right; margin-top: 4px;">✅ 已自動儲存</span>
-            </h3>
+            <div class="table-header-flex">
+                <h3 style="border: none; margin: 0; padding: 0;">👨‍🎓 學生評分表 
+                    <span style="font-size: 12px; color: #718096; margin-left: 10px;">(分數將自動即時結算)</span>
+                    <span id="saveStatus" style="font-size: 12px; color: #38a169; display: block; margin-top: 4px;">✅ 已自動儲存</span>
+                </h3>
+                <div class="class-filter" id="classFilterContainer" style="display: none;">
+                    <label>選擇班別：</label>
+                    <select id="classSelect" onchange="handleClassFilterChange()">
+                        <option value="all">顯示所有班別</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="alert" id="tableAlert">請先在上方上傳 Excel 檔案。</div>
             
             <div id="tableContainer"></div>
@@ -134,18 +151,24 @@
                 fitnessType: 'run13',
                 skill1: '籃球運球',
                 skill2: '籃球投籃',
-                knowledge: '運動安全知識'
+                knowledge: '運動安全知識',
+                selectedClass: 'all' // 新增班別篩選狀態
             },
             students: []
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v12');
+            let savedState = localStorage.getItem('peGradingState_v13');
             if (savedState) {
                 try {
-                    appState = JSON.parse(savedState);
+                    let parsedState = JSON.parse(savedState);
+                    appState = { ...appState, ...parsedState };
+                    // 確保設定正確合併
+                    appState.settings = { ...appState.settings, ...parsedState.settings };
+                    
                     restoreUIFromState();
                     if (appState.students.length > 0) {
+                        updateClassFilterOptions();
                         renderTable();
                         calculateScores(); 
                     }
@@ -161,6 +184,38 @@
             autoSave();
         }
 
+        // 處理班別切換
+        function handleClassFilterChange() {
+            autoSave(); // 先儲存目前的輸入
+            appState.settings.selectedClass = document.getElementById('classSelect').value;
+            renderTable(); // 重新渲染表格
+            calculateScores();
+            autoSave(); // 儲存篩選狀態
+        }
+
+        // 更新班別下拉選單
+        function updateClassFilterOptions() {
+            let classes = new Set();
+            appState.students.forEach(s => {
+                if(s.class && s.class !== '-') classes.add(s.class);
+            });
+            
+            let classSelect = document.getElementById('classSelect');
+            let sortedClasses = Array.from(classes).sort();
+            
+            let optionsHTML = '<option value="all">顯示所有班別</option>';
+            sortedClasses.forEach(cls => {
+                optionsHTML += `<option value="${cls}">${cls}</option>`;
+            });
+            
+            classSelect.innerHTML = optionsHTML;
+            classSelect.value = appState.settings.selectedClass || 'all';
+            
+            if(appState.students.length > 0) {
+                document.getElementById('classFilterContainer').style.display = 'flex';
+            }
+        }
+
         function autoSave() {
             appState.settings.fitnessType = document.getElementById('fitnessType').value;
             appState.settings.skill1 = document.getElementById('skill1').value;
@@ -172,22 +227,27 @@
                 if (table) {
                     let rows = table.getElementsByTagName('tbody')[0].rows;
                     for (let i = 0; i < rows.length; i++) {
-                        let cells = rows[i].cells;
-                        let fitnessInputElem = cells[3].querySelector('.fitness-input');
-                        appState.students[i].fitnessVal = parseFloat(fitnessInputElem.value) || 0;
+                        let originalIndex = rows[i].getAttribute('data-index');
+                        if(originalIndex === null) continue;
                         
-                        appState.students[i].skill1Val = parseInt(cells[4].querySelector('select').value) || 0;
-                        appState.students[i].skill2Val = parseInt(cells[5].querySelector('select').value) || 0;
-                        appState.students[i].knowledgeVal = parseInt(cells[6].querySelector('select').value) || 0;
-                        appState.students[i].attireVal = parseInt(cells[7].querySelector('select').value) || 0;
-                        appState.students[i].participationVal = parseInt(cells[8].querySelector('select').value) || 0;
+                        let idx = parseInt(originalIndex);
+                        let cells = rows[i].cells;
+                        
+                        let fitnessInputElem = cells[3].querySelector('.fitness-input');
+                        appState.students[idx].fitnessVal = parseFloat(fitnessInputElem.value) || 0;
+                        
+                        appState.students[idx].skill1Val = parseInt(cells[4].querySelector('select').value) || 0;
+                        appState.students[idx].skill2Val = parseInt(cells[5].querySelector('select').value) || 0;
+                        appState.students[idx].knowledgeVal = parseInt(cells[6].querySelector('select').value) || 0;
+                        appState.students[idx].attireVal = parseInt(cells[7].querySelector('select').value) || 0;
+                        appState.students[idx].participationVal = parseInt(cells[8].querySelector('select').value) || 0;
                     }
                 }
             }
             
             calculateScores();
 
-            localStorage.setItem('peGradingState_v12', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v13', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -300,7 +360,6 @@
                 let attireIdx = headers.findIndex(h => h && h.toString().includes('服裝'));
                 let participationIdx = headers.findIndex(h => h && h.toString().includes('參與'));
 
-                // 安全解析分數的輔助函式（防止 0 被誤判為空）
                 let parseScore = (val, defaultVal) => {
                     if (val === undefined || val === null || val.toString().trim() === '') return defaultVal;
                     let parsed = parseInt(val);
@@ -320,7 +379,7 @@
                         fitnessVal: (fitnessIdx !== -1) ? parseFitness(row[fitnessIdx], 0) : 0,
                         skill1Val: (skill1Idx !== -1) ? parseScore(row[skill1Idx], 0) : 0,
                         skill2Val: (skill2Idx !== -1) ? parseScore(row[skill2Idx], 0) : 0,
-                        knowledgeVal: (knowledgeIdx !== -1) ? parseScore(row[knowledgeIdx], 10) : 10, // 預設 10 分
+                        knowledgeVal: (knowledgeIdx !== -1) ? parseScore(row[knowledgeIdx], 10) : 10,
                         attireVal: (attireIdx !== -1) ? parseScore(row[attireIdx], 5) : 5, 
                         participationVal: (participationIdx !== -1) ? parseScore(row[participationIdx], 5) : 5, 
                         totalScore: 0,
@@ -329,6 +388,9 @@
                     };
                 });
                 
+                // 讀取完新檔案後重設為顯示全部
+                appState.settings.selectedClass = 'all'; 
+                updateClassFilterOptions();
                 renderTable();
                 autoSave(); 
                 alert("Excel 檔案讀取成功！");
@@ -339,7 +401,7 @@
 
         function clearData() {
             if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！")) {
-                localStorage.removeItem('peGradingState_v12');
+                localStorage.removeItem('peGradingState_v13'); // 更新 localStorage 鍵值
                 location.reload(); 
             }
         }
@@ -363,8 +425,14 @@
             html += '<th>Grade</th>';
             html += '</tr></thead><tbody>';
 
+            let selectedClass = appState.settings.selectedClass;
+
             appState.students.forEach((student, index) => {
-                html += `<tr>`;
+                // 根據選單進行篩選
+                if(selectedClass !== 'all' && student.class !== selectedClass) return;
+
+                // 加入 data-index 屬性綁定陣列索引
+                html += `<tr data-index="${index}">`;
                 html += `<td>${student.class}</td>`;
                 html += `<td>${student.studentNo}</td>`;
                 html += `<td>${student.name}</td>`;
@@ -386,6 +454,9 @@
             html += '</tbody></table>';
             document.getElementById('tableContainer').innerHTML = html;
             document.getElementById('exportBtn').style.display = 'inline-block';
+            
+            // 重新渲染後立刻重新計算並顯示成績
+            calculateScores();
         }
 
         function getFitnessScore(type, val) {
@@ -474,7 +545,11 @@
             let rows = table.getElementsByTagName('tbody')[0].rows;
 
             for (let i = 0; i < rows.length; i++) {
-                let s = appState.students[i];
+                let originalIndex = rows[i].getAttribute('data-index');
+                if(originalIndex === null) continue;
+                let idx = parseInt(originalIndex);
+                
+                let s = appState.students[idx];
                 let cells = rows[i].cells;
                 
                 let fitnessScore = getFitnessScore(fitnessType, s.fitnessVal);
@@ -513,6 +588,7 @@
                 autoSave(); 
                 let exportData = [];
                 
+                // 下載時依舊匯出所有學生，不受畫面篩選影響
                 appState.students.forEach(s => {
                     exportData.push({
                         "班別": s.class,
