@@ -144,7 +144,7 @@
             <div id="tableContainer"></div>
             
             <div class="action-buttons">
-                <button id="exportBtn" class="success-btn" style="display:none;" onclick="exportExcel()">📊 下載最終成績單 (Excel)</button>
+                <button id="exportBtn" class="success-btn" style="display:none;" onclick="exportExcel()">📊 下載最終成績單 (按班別分頁)</button>
             </div>
         </div>
     </div>
@@ -582,7 +582,6 @@
                 let fitnessScore = getFitnessScore(fitnessType, s.fitnessVal);
                 let total = fitnessScore + s.skill1Val + s.skill2Val + s.knowledgeVal + s.attireVal + s.participationVal;
                 
-                // 直接使用總分計算 Grade
                 let gradeLet = getGradeLetter(total);
 
                 s.totalScore = total;
@@ -611,10 +610,17 @@
                 }
 
                 autoSave(); 
-                let exportData = [];
                 
+                let wb = XLSX.utils.book_new();
+                
+                // 將學生按班別分類
+                let classGroups = {};
                 appState.students.forEach(s => {
-                    exportData.push({
+                    let className = (s.class && s.class.trim() !== '-' && s.class.trim() !== '') ? s.class : '未分班';
+                    if (!classGroups[className]) {
+                        classGroups[className] = [];
+                    }
+                    classGroups[className].push({
                         "班別": s.class,
                         "學號": s.studentNo,
                         "姓名": s.name,
@@ -629,17 +635,29 @@
                     });
                 });
 
-                let ws = XLSX.utils.json_to_sheet(exportData);
-                
-                ws['!cols'] = [
-                    {wch: 8},  {wch: 10}, {wch: 12}, 
-                    {wch: 15}, {wch: 10}, {wch: 10}, 
-                    {wch: 10}, {wch: 12}, {wch: 12}, 
-                    {wch: 8},  {wch: 8}    
-                ];
+                // 為每個班別建立一個獨立的 Sheet
+                let sortedClasses = Object.keys(classGroups).sort();
+                sortedClasses.forEach(className => {
+                    let ws = XLSX.utils.json_to_sheet(classGroups[className]);
+                    
+                    // 設定欄位寬度
+                    ws['!cols'] = [
+                        {wch: 8},  {wch: 10}, {wch: 12}, 
+                        {wch: 15}, {wch: 10}, {wch: 10}, 
+                        {wch: 10}, {wch: 12}, {wch: 12}, 
+                        {wch: 8},  {wch: 8}    
+                    ];
+                    
+                    // 確保 Sheet 名稱符合 Excel 規範（不可包含特殊字元，長度上限 31）
+                    let safeSheetName = className.substring(0, 31).replace(/[\\/?*[\]]/g, '_');
+                    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+                });
 
-                let wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "體育成績單");
+                // 防呆：如果完全沒有資料，生成一個空白頁避免程式錯誤
+                if (sortedClasses.length === 0) {
+                    let ws = XLSX.utils.json_to_sheet([{ "訊息": "沒有資料" }]);
+                    XLSX.utils.book_append_sheet(wb, ws, "空白");
+                }
                 
                 let dateStr = new Date().toISOString().split('T')[0];
                 let filename = `體育成績單_${appState.settings.fitnessType}_${dateStr}.xlsx`;
@@ -647,7 +665,7 @@
                 XLSX.writeFile(wb, filename);
 
                 setTimeout(() => {
-                    btn.innerText = "📊 下載最終成績單 (Excel)";
+                    btn.innerText = "📊 下載最終成績單 (按班別分頁)";
                     btn.disabled = false;
                 }, 1500);
 
@@ -661,5 +679,3 @@
     </script>
 </body>
 </html>
-
-```
