@@ -1,9 +1,20 @@
+這已經為你加入了「六年級」各項體適能項目的計分邏輯和選項。
+
+主要更新：
+
+1. **下拉式選單**：在四個體適能類別中，皆新增了「六年級」的選項（`run6`, `situp6`, `reach6`, `grip6`）。
+2. **分數計算 (`getFitnessScore`)**：按你提供的六年級評分標準（包含耐力跑乘 60 米計算距離、仰卧起坐、坐地前身及手握力）加入了對應的 0、8、16、24、32、40 分距。
+3. **標題更新**：將標題改為「一至六級體育課計分系統」以反映功能擴充。
+
+請複製以下完整的程式碼取代原檔案：
+
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一至四年級體育課計分系統</title>
+    <title>一至六年級體育課計分系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f0f4f8; padding: 15px; box-sizing: border-box; }
@@ -58,7 +69,7 @@
 </head>
 <body>
 
-    <h1>🏃‍♂️ 一至四年級體育課計分系統</h1>
+    <h1>🏃‍♂️ 一至六年級體育課計分系統</h1>
 
     <div class="content-wrapper">
         <div class="card settings-card">
@@ -71,18 +82,22 @@
                             <optgroup label="耐力跑 (圈數)">
                                 <option value="run13">一至三年級耐力跑</option>
                                 <option value="run4">四年級耐力跑</option>
+                                <option value="run6">六年級耐力跑</option>
                             </optgroup>
                             <optgroup label="仰卧起坐 (次)">
                                 <option value="situp13">一至三年級仰卧起坐</option>
                                 <option value="situp4">四年級仰卧起坐</option>
+                                <option value="situp6">六年級仰卧起坐</option>
                             </optgroup>
                             <optgroup label="坐地前身 (cm)">
                                 <option value="reach13">一至三年級坐地前身</option>
                                 <option value="reach4">四年級坐地前身</option>
+                                <option value="reach6">六年級坐地前身</option>
                             </optgroup>
                             <optgroup label="手握力 (kg)">
                                 <option value="grip13">一至三年級手握力</option>
                                 <option value="grip4">四年級手握力</option>
+                                <option value="grip6">六年級手握力</option>
                             </optgroup>
                         </select>
                     </div>
@@ -152,18 +167,17 @@
                 skill1: '籃球運球',
                 skill2: '籃球投籃',
                 knowledge: '運動安全知識',
-                selectedClass: 'all' // 新增班別篩選狀態
+                selectedClass: 'all' 
             },
             students: []
         };
 
         window.onload = function() {
-            let savedState = localStorage.getItem('peGradingState_v13');
+            let savedState = localStorage.getItem('peGradingState_v14');
             if (savedState) {
                 try {
                     let parsedState = JSON.parse(savedState);
                     appState = { ...appState, ...parsedState };
-                    // 確保設定正確合併
                     appState.settings = { ...appState.settings, ...parsedState.settings };
                     
                     restoreUIFromState();
@@ -184,16 +198,14 @@
             autoSave();
         }
 
-        // 處理班別切換
         function handleClassFilterChange() {
-            autoSave(); // 先儲存目前的輸入
+            autoSave(); 
             appState.settings.selectedClass = document.getElementById('classSelect').value;
-            renderTable(); // 重新渲染表格
+            renderTable(); 
             calculateScores();
-            autoSave(); // 儲存篩選狀態
+            autoSave(); 
         }
 
-        // 更新班別下拉選單
         function updateClassFilterOptions() {
             let classes = new Set();
             appState.students.forEach(s => {
@@ -247,7 +259,7 @@
             
             calculateScores();
 
-            localStorage.setItem('peGradingState_v13', JSON.stringify(appState));
+            localStorage.setItem('peGradingState_v14', JSON.stringify(appState));
             let status = document.getElementById('saveStatus');
             status.innerText = "✅ 自動儲存成功 (" + new Date().toLocaleTimeString() + ")";
             status.style.color = "#38a169";
@@ -293,7 +305,7 @@
         };
 
         function generateFitnessInput(type, defaultValue) {
-            if (type === 'run13' || type === 'run4') {
+            if (type === 'run13' || type === 'run4' || type === 'run6') {
                 let options = '';
                 let foundDefault = false;
                 for (let i = 0; i <= 30; i += 0.5) {
@@ -383,12 +395,10 @@
                         attireVal: (attireIdx !== -1) ? parseScore(row[attireIdx], 5) : 5, 
                         participationVal: (participationIdx !== -1) ? parseScore(row[participationIdx], 5) : 5, 
                         totalScore: 0,
-                        submittedScore: 0,
                         gradeLetter: '-'
                     };
                 });
                 
-                // 讀取完新檔案後重設為顯示全部
                 appState.settings.selectedClass = 'all'; 
                 updateClassFilterOptions();
                 renderTable();
@@ -401,7 +411,7 @@
 
         function clearData() {
             if(confirm("⚠️ 確定要清除所有暫存資料嗎？這會把目前的評分表全部清空！")) {
-                localStorage.removeItem('peGradingState_v13'); // 更新 localStorage 鍵值
+                localStorage.removeItem('peGradingState_v14'); 
                 location.reload(); 
             }
         }
@@ -421,17 +431,14 @@
             html += '<th>態度:服裝<br><small>0-5分</small></th>';
             html += '<th>態度:參與<br><small>0-5分</small></th>';
             html += '<th>總分</th>';
-            html += '<th>呈分</th>';
             html += '<th>Grade</th>';
             html += '</tr></thead><tbody>';
 
             let selectedClass = appState.settings.selectedClass;
 
             appState.students.forEach((student, index) => {
-                // 根據選單進行篩選
                 if(selectedClass !== 'all' && student.class !== selectedClass) return;
 
-                // 加入 data-index 屬性綁定陣列索引
                 html += `<tr data-index="${index}">`;
                 html += `<td>${student.class}</td>`;
                 html += `<td>${student.studentNo}</td>`;
@@ -446,7 +453,6 @@
                 html += `<td>${generateSelect(5, student.participationVal)}</td>`;
                 
                 html += `<td class="total-score-cell">-</td>`;
-                html += `<td class="submitted-cell">-</td>`;
                 html += `<td class="grade-cell">-</td>`;
                 html += `</tr>`;
             });
@@ -455,7 +461,6 @@
             document.getElementById('tableContainer').innerHTML = html;
             document.getElementById('exportBtn').style.display = 'inline-block';
             
-            // 重新渲染後立刻重新計算並顯示成績
             calculateScores();
         }
 
@@ -478,6 +483,15 @@
                 if (dist <= 1319) return 24;
                 if (dist <= 1439) return 32;
                 return 40;
+            }
+            else if (type === 'run6') {
+                let dist = val * 60;
+                if (dist < 980) return 0;
+                if (dist <= 1079) return 8;
+                if (dist <= 1199) return 16;
+                if (dist <= 1299) return 24;
+                if (dist <= 1409) return 32;
+                return 40;
             } 
             else if (type === 'situp13') {
                 if (val <= 4) return 8;
@@ -494,6 +508,14 @@
                 if (val <= 29) return 32;
                 return 40; 
             } 
+            else if (type === 'situp6') {
+                if (val <= 10) return 0;
+                if (val <= 16) return 8;
+                if (val <= 22) return 16;
+                if (val <= 27) return 24;
+                if (val <= 33) return 32;
+                return 40; 
+            }
             else if (type === 'reach13') {
                 if (val <= 13) return 0;
                 if (val <= 17) return 8;
@@ -508,6 +530,14 @@
                 if (val <= 22) return 16;
                 if (val <= 27) return 24;
                 if (val <= 31) return 32;
+                return 40; 
+            }
+            else if (type === 'reach6') {
+                if (val <= 10.9) return 0;
+                if (val <= 14.9) return 8;
+                if (val <= 20.9) return 16;
+                if (val <= 25.9) return 24;
+                if (val <= 30.9) return 32;
                 return 40; 
             } 
             else if (type === 'grip13') {
@@ -524,6 +554,14 @@
                 if (val <= 23.9) return 16;
                 if (val <= 27.9) return 24;
                 if (val <= 30.9) return 32;
+                return 40; 
+            }
+            else if (type === 'grip6') {
+                if (val <= 23.4) return 0;
+                if (val <= 27.9) return 8;
+                if (val <= 32.9) return 16;
+                if (val <= 38.9) return 24;
+                if (val <= 43.9) return 32;
                 return 40; 
             }
             return 0;
@@ -555,15 +593,13 @@
                 let fitnessScore = getFitnessScore(fitnessType, s.fitnessVal);
                 let total = fitnessScore + s.skill1Val + s.skill2Val + s.knowledgeVal + s.attireVal + s.participationVal;
                 
-                let submitted = Math.round(total / 5) * 5;
-                let gradeLet = getGradeLetter(submitted);
+                // 直接使用總分計算 Grade
+                let gradeLet = getGradeLetter(total);
 
                 s.totalScore = total;
-                s.submittedScore = submitted;
                 s.gradeLetter = gradeLet;
 
                 cells[9].innerHTML = `<b class="highlight-total">${total}</b><br><small style="color:gray; font-weight:normal;">(適能得${fitnessScore}分)</small>`;
-                cells[10].innerHTML = `<span class="submitted-cell">${submitted}</span>`;
                 
                 let gradeColor = '#e53e3e'; 
                 if(gradeLet === 'A') gradeColor = '#38a169'; 
@@ -571,7 +607,7 @@
                 else if(gradeLet === 'C') gradeColor = '#dd6b20';
                 else if(gradeLet === 'D') gradeColor = '#4a5568';
                 
-                cells[11].innerHTML = `<span style="color:${gradeColor}; font-weight:bold; font-size:16px;">${gradeLet}</span>`;
+                cells[10].innerHTML = `<span style="color:${gradeColor}; font-weight:bold; font-size:16px;">${gradeLet}</span>`;
             }
         }
 
@@ -588,7 +624,6 @@
                 autoSave(); 
                 let exportData = [];
                 
-                // 下載時依舊匯出所有學生，不受畫面篩選影響
                 appState.students.forEach(s => {
                     exportData.push({
                         "班別": s.class,
@@ -601,7 +636,6 @@
                         "態度:服裝": s.attireVal,
                         "態度:參與": s.participationVal,
                         "總分": s.totalScore,
-                        "呈分": s.submittedScore,
                         "Grade": s.gradeLetter
                     });
                 });
@@ -612,7 +646,7 @@
                     {wch: 8},  {wch: 10}, {wch: 12}, 
                     {wch: 15}, {wch: 10}, {wch: 10}, 
                     {wch: 10}, {wch: 12}, {wch: 12}, 
-                    {wch: 8},  {wch: 8},  {wch: 8}   
+                    {wch: 8},  {wch: 8}    
                 ];
 
                 let wb = XLSX.utils.book_new();
@@ -638,3 +672,5 @@
     </script>
 </body>
 </html>
+
+```
