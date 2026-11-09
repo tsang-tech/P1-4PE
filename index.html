@@ -456,7 +456,7 @@
         function getFitnessScore(type, val) {
             val = parseFloat(val) || 0;
             if (type === 'run13') {
-                let dist = val * 60;
+                let dist = val * 50;
                 if (dist < 640) return 0;
                 if (dist <= 709) return 8;
                 if (dist <= 769) return 16;
@@ -465,7 +465,7 @@
                 return 40;
             } 
             else if (type === 'run4') {
-                let dist = val * 60;
+                let dist = val * 50;
                 if (dist < 960) return 0;
                 if (dist <= 1089) return 8;
                 if (dist <= 1199) return 16;
@@ -474,7 +474,7 @@
                 return 40;
             }
             else if (type === 'run6') {
-                let dist = val * 60;
+                let dist = val * 50;
                 if (dist < 980) return 0;
                 if (dist <= 1079) return 8;
                 if (dist <= 1199) return 16;
